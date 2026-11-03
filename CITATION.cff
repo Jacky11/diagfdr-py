@@ -1,0 +1,44 @@
+# GitHub reads this file for the "Cite this repository" button.
+# Update `preferred-citation` (journal, volume, pages, doi) once the article is published.
+cff-version: 1.2.0
+message: "If you use diagFDR, please cite the article below (preferred) or the software."
+type: software
+title: "diagfdr: Python port of diagFDR (scope, calibration and stability diagnostics for FDR claims)"
+version: 0.1.0
+date-released: 2026-11-02
+license: GPL-3.0
+repository-code: "https://github.com/Jacky11/diagfdr-py"
+authors:
+  - family-names: Giai Gianetto
+    given-names: Quentin
+    orcid: "https://orcid.org/0000-0001-6815-2498"
+    affiliation: "Institut Pasteur, Université Paris Cité, Paris, France"
+keywords:
+  - proteomics
+  - false discovery rate
+  - target-decoy
+  - entrapment
+  - reproducibility
+preferred-citation:
+  type: article
+  title: "diagFDR: Assessing False Discovery Rate Claims in Proteomics with Scope, Calibration and Stability Diagnostics"
+  authors:
+    - family-names: Chion
+      given-names: Marie
+      orcid: "https://orcid.org/0000-0001-8956-8388"
+    - family-names: Godmer
+      given-names: Alexandre
+      orcid: "https://orcid.org/0000-0002-5211-5796"
+    - family-names: Douché
+      given-names: Thibaut
+      orcid: "https://orcid.org/0000-0001-8627-6726"
+    - family-names: Matondo
+      given-names: Mariette
+      orcid: "https://orcid.org/0000-0003-3958-7710"
+    - family-names: Giai Gianetto
+      given-names: Quentin
+      orcid: "https://orcid.org/0000-0001-6815-2498"
+  journal: "bioRxiv"
+  year: 2026
+  doi: "10.64898/2026.04.16.718468"
+  notes: "Preprint; submitted to Briefings in Bioinformatics"
