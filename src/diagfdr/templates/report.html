@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>diagFDR report</title>
+<style>
+ body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;max-width:1100px;margin:2em auto;padding:0 1em;color:#1b1b1b;line-height:1.45}
+ h1{font-size:1.6em;margin-bottom:.2em} h2{font-size:1.25em;margin-top:1.6em;border-bottom:1px solid #ddd;padding-bottom:.2em}
+ table{border-collapse:collapse;font-size:.88em;margin:.6em 0;width:100%} th,td{border:1px solid #ddd;padding:.3em .5em;text-align:left;vertical-align:top}
+ th{background:#f3f4f6} td.num{text-align:right;font-variant-numeric:tabular-nums}
+ .ALERT{background:#fde2e1;font-weight:600} .CAUTION{background:#fff3cd} .NO_ALERT,.OK{background:#e6f4ea}
+ .NE_two_pass,.NE_insufficient_N,.NA{background:#eee;color:#555}
+ .box{border:1px solid #cbd5e1;background:#f8fafc;padding:.6em 1em;border-radius:6px;margin:.8em 0}
+ code{background:#f1f5f9;padding:0 .25em;border-radius:3px} small{color:#555}
+</style>
+</head>
+<body>
+<h1>diagFDR report</h1>
+<small>diagfdr (Python) {{ version }} &middot; {{ date }} &middot; headline threshold &alpha; = {{ params.alpha_main }}</small>
+
+<h2>Executive summary</h2>
+<div class="box">
+<p><b>Alerts motivate inspection; they are not pass/fail verdicts.</b> Items 1&ndash;4 of the reporting standard are internal checks
+(specification and consistency with the exported decoys); they cannot show that the decoys behave like incorrect targets &mdash; only
+external evidence (entrapment, known composition) can.</p>
+<ul>
+{% for row in summary %}<li><b>{{ row.list }}</b> &mdash; <span class="{{ row.status }}">{{ row.status }}</span>: {{ row.interpretation }}</li>
+{% endfor %}</ul>
+</div>
+
+<h2>Lists</h2>
+<table><tr><th>List</th><th>Unit</th><th>Scope</th><th>q-value source</th><th>Export ceiling</th><th>Two-pass</th><th>n rows</th><th>n decoys</th><th>Provenance</th></tr>
+{% for nm, m in lists.items() %}<tr><td>{{ nm }}</td><td>{{ m.unit }}</td><td>{{ m.scope }}</td><td><code>{{ m.q_source }}</code></td>
+<td class="num">{{ m.q_max_export if m.q_max_export is not none else "unknown" }}</td><td>{{ m.two_pass if m.two_pass is not none else "unknown" }}</td>
+<td class="num">{{ "{:,}".format(m.n) }}</td><td class="num">{{ "{:,}".format(m.n_decoy) }}</td><td><small>{{ m.provenance }}</small></td></tr>
+{% endfor %}</table>
+
+<h2>Headline summary (Table)</h2>
+<table>
+<tr><th>List</th><th>T<sub>&alpha;</sub></th><th>D<sub>&alpha;</sub></th><th>Decoy ratio D/T</th><th>D<sub>&alpha;</sub><sup>-1/2</sup></th><th>FDP-CV benchmark</th>
+<th>D<sub>&alpha;,win</sub></th><th>IPE</th><th>&pi;<sub>D</sub> (low conf.)</th><th>Status</th></tr>
+{% for r in headline %}<tr><td>{{ r.list }}</td><td class="num">{{ "{:,}".format(r.T_alpha) }}</td><td class="num">{{ "{:,}".format(r.D_alpha) }}</td>
+<td class="num {{ r.flag_FDR }}">{{ "%.3f%%"|format(100*r.FDR_hat) if r.FDR_hat==r.FDR_hat else "n/a" }}</td>
+<td class="num {{ r.flag_support }}">{{ "%.3f"|format(r.support_index) }}</td><td class="num">{{ "%.3f"|format(r.CV_benchmark) }}</td>
+<td class="num {{ r.flag_Dwin }}">{{ r.D_alpha_win if r.D_alpha_win==r.D_alpha_win else "n/a" }}</td>
+<td class="num {{ r.flag_IPE }}">{{ "%.4f"|format(r.IPE) if r.IPE==r.IPE else "n/a" }}</td>
+<td class="num {{ r.flag_equalchance }}">{{ "%.3f"|format(r.pi_D_hat) if r.pi_D_hat==r.pi_D_hat else "n/a" }} <small>({{ r.flag_equalchance }})</small></td>
+<td class="{{ r.status }}">{{ r.status }}</td></tr>
+{% endfor %}</table>
+<p><small>Decoy ratio: a consistency check of the exported q-values on the reported list (expected &le; &alpha; by construction), not the realised
+error. FDP-CV benchmark &radic;2&middot;D<sub>&alpha;</sub><sup>-1/2</sup>: an independence reference for the dispersion of the realised FDP across
+experiments, neither a confidence interval nor a bound for this list. IPE: decoy-reference PEP concordance error (target mean PEP vs D<sub>b</sub>/T<sub>b</sub>
+per PEP bin), not a calibration against the truth. &pi;<sub>D</sub>: decoy fraction among entries with q in [{{ params.low_conf[0] }}, {{ params.low_conf[1] }}];
+evaluable only for single-pass paired competition.</small></p>
+
+{% if sentences %}
+<h2>Reporting sentences (five-item standard)</h2>
+<ul>{% for s in sentences %}<li><i>&ldquo;{{ s }}&rdquo;</i></li>{% endfor %}</ul>
+{% endif %}
+
+<h2>Alert basis</h2>
+<table><tr><th>Flag</th><th>Diagnostic</th><th>Threshold</th><th>Basis</th></tr>
+{% for r in basis %}<tr><td>{{ r.flag }}</td><td>{{ r.diagnostic }}</td><td>{{ r.threshold }}</td><td>{{ r.basis }}</td></tr>{% endfor %}</table>
+
+<h2>Stability across thresholds</h2>
+<table><tr><th>List</th><th>&alpha;</th><th>T<sub>&alpha;</sub></th><th>D<sub>&alpha;</sub></th><th>D/T</th><th>FDP-CV benchmark</th><th>D<sub>win</sub></th><th>Elasticity J(&alpha;, {{ 1+params.eps }}&alpha;)</th></tr>
+{% for r in stability %}<tr><td>{{ r.list }}</td><td class="num">{{ r.alpha }}</td><td class="num">{{ "{:,}".format(r.T_alpha) }}</td><td class="num">{{ "{:,}".format(r.D_alpha) }}</td>
+<td class="num">{{ "%.4f"|format(r.FDR_hat) if r.FDR_hat==r.FDR_hat else "n/a" }}</td><td class="num">{{ "%.3f"|format(r.CV_benchmark) }}</td>
+<td class="num">{{ r.D_alpha_win if r.D_alpha_win==r.D_alpha_win else "n/a" }}</td><td class="num">{{ "%.3f"|format(r.jaccard) if r.jaccard==r.jaccard else "n/a" }}</td></tr>
+{% endfor %}</table>
+
+{% if eq_bands %}
+<h2>Equal chance by q-value band</h2>
+<table><tr><th>List</th><th>q band</th><th>n</th><th>n decoy</th><th>Decoy fraction</th><th>mean q</th></tr>
+{% for r in eq_bands %}<tr><td>{{ r.list }}</td><td>{{ r.qbin }}</td><td class="num">{{ "{:,}".format(r.n) }}</td><td class="num">{{ "{:,}".format(r.n_decoy) }}</td>
+<td class="num">{{ "%.3f"|format(r.decoy_frac) }}</td><td class="num">{{ "%.4f"|format(r.q_mean) }}</td></tr>{% endfor %}</table>
+{% endif %}
+
+{% if pep_bins %}
+<h2>PEP concordance by bin (IPE)</h2>
+<table><tr><th>List</th><th>PEP bin</th><th>T<sub>b</sub></th><th>D<sub>b</sub></th><th>mean target PEP</th><th>D<sub>b</sub>/T<sub>b</sub></th><th>used</th></tr>
+{% for r in pep_bins %}<tr><td>{{ r.list }}</td><td>{{ r.bin }}</td><td class="num">{{ "{:,}".format(r.n_target) }}</td><td class="num">{{ "{:,}".format(r.n_decoy) }}</td>
+<td class="num">{{ "%.4f"|format(r.pep_mean_targets) if r.pep_mean_targets==r.pep_mean_targets else "n/a" }}</td><td class="num">{{ "%.4f"|format(r.e_b) }}</td><td>{{ r.used }}</td></tr>{% endfor %}</table>
+{% endif %}
+
+{% if entrap %}
+<h2>External validation (entrapment)</h2>
+<table><tr><th>List</th><th>&alpha;</th><th>T<sub>&alpha;</sub></th><th>E<sub>&alpha;</sub></th><th>Raw FDP (lower bound)</th><th>Wilson 95%</th><th>r</th><th>Corrected (upper bound on average)</th></tr>
+{% for r in entrap %}<tr><td>{{ r.list }}</td><td class="num">{{ r.alpha }}</td><td class="num">{{ "{:,}".format(r.T_alpha) }}</td><td class="num">{{ r.E_alpha }}</td>
+<td class="num">{{ "%.3f%%"|format(100*r.fdp_raw) }}</td><td class="num">[{{ "%.3f"|format(100*r.lo) }}, {{ "%.3f"|format(100*r.hi) }}]%</td>
+<td class="num">{{ "%.3f"|format(r.r) if r.r==r.r else "n/a" }}</td><td class="num">{{ "%.3f%%"|format(100*r.fdp_corrected) if r.fdp_corrected==r.fdp_corrected else "n/a" }}</td></tr>{% endfor %}</table>
+<p><small>Wilson intervals are descriptive and ignore clustering of errors within protein groups; the corrected value assumes the entrapment proteome is a
+valid model of incorrect matches and uses the size correction of Wen et al. (2025).</small></p>
+{% endif %}
+
+<h2>Parameters</h2>
+<p><small>{{ params }}</small></p>
+<p><small>Reference: Chion M, Godmer A, Douch&eacute; T, Matondo M, Giai Gianetto Q (2026). diagFDR: Assessing False Discovery Rate Claims in Proteomics with
+Scope, Calibration and Stability Diagnostics. bioRxiv 10.64898/2026.04.16.718468. R package: https://cran.r-project.org/package=diagFDR</small></p>
+</body></html>
